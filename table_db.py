@@ -54,6 +54,19 @@ class Database:
         except Exception as e:
             print(f"Ошибка получения данных: {e}")
             return []
+    def get_table_names(self) -> List[str]:
+        """Получает список всех таблиц из базы данных"""
+        query = """
+            SELECT name 
+            FROM sqlite_master 
+            WHERE type='table' AND name NOT LIKE 'sqlite_%'
+        """
+        try:
+            self.cursor.execute(query)
+            return [table[0] for table in self.cursor.fetchall()]
+        except sqlite3.Error as e:
+            print(f"[ОШИБКА] Не удалось получить список таблиц: {str(e)}")
+            return []
 
 class TableModel(QAbstractTableModel):
     def __init__(self, data=None, headers=None):
@@ -393,9 +406,36 @@ class TableWindow(QMainWindow):
         self.empty_cell_delegate = EmptyCellDelegate(self.table)
         self.table.setItemDelegate(self.empty_cell_delegate)
         # Создаем кнопку синхронизации
-        sync_button = QPushButton("Синхронизировать")
-        sync_button.setStyleSheet("""
-        
+        # Создаем выпадающий список для таблиц
+        self.table_dropdown = QComboBox()
+        self.table_dropdown.setStyleSheet("""
+            QComboBox {
+                background-color: #363A4F;
+                color: white;
+                border: none;
+                padding: 8px 15px;
+                border-radius: 4px;
+                margin: 5px;
+            }
+            QComboBox:hover {
+                background-color: #494D64;
+            }
+            QComboBox:pressed {
+                background-color: #7B5AF4;
+            }
+            QComboBox::drop-down {
+                border: none;
+            }
+            QComboBox::down-arrow {
+                image: url(down_arrow.png);
+                width: 12px;
+                height: 12px;
+            }
+        """)
+        self.load_tables_to_dropdown(self.table_dropdown)
+        # Создаем кнопку синхронизации
+        self.sync_button = QPushButton("Синхронизировать")
+        self.sync_button.setStyleSheet("""
             QPushButton {
                 background-color: #363A4F;
                 color: white;
@@ -411,11 +451,12 @@ class TableWindow(QMainWindow):
                 background-color: #7B5AF4;
             }
         """)
-        sync_button.clicked.connect(self.sync_database)
+        self.sync_button.clicked.connect(self.sync_database)
         
-        # Добавляем кнопку в layout перед таблицей
-        layout.addWidget(sync_button)
+        # Добавляем элементы в layout
+        layout.addWidget(self.table_dropdown)
         layout.addWidget(self.table)
+        layout.addWidget(self.sync_button)
         # Устанавливаем фиксированную ширину для всех колонок
         self.table.horizontalHeader().setDefaultSectionSize(150)
         
@@ -505,6 +546,11 @@ class TableWindow(QMainWindow):
         self.tooltip_timer.setInterval(300)  # 300 мс задержка перед показом
         self.tooltip_timer.timeout.connect(self.show_tooltip)
         
+        self.table_dropdown.currentTextChanged.connect(lambda text: self.load_data(text))
+        
+        # Добавляем выпадающий список в layout
+        layout.insertWidget(0, self.table_dropdown)
+        
         # Создаем кастомную подсказку
         self.tooltip = CustomTooltip()
         
@@ -517,11 +563,30 @@ class TableWindow(QMainWindow):
         self.table.viewport().installEventFilter(self)
         QApplication.instance().installEventFilter(self)
 
-    def load_data(self):
+
+    def load_tables_to_dropdown(self, dropdown):
+        """Загружает названия таблиц в выпадающий список"""
         try:
             db = Database()
+            tables = db.get_table_names()
+            dropdown.clear()
+            dropdown.addItems(tables)
+            db.close()
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Ошибка загрузки таблиц: {str(e)}")
+    def load_data(self, table_name=None):
+        try:
+            db = Database()
+            
+            # Если таблица не указана, берем первую из списка
+            if table_name is None:
+                tables = db.get_table_names()
+                if not tables:
+                    raise Exception("В базе данных нет таблиц")
+                table_name = tables[0]
+            
             # Получаем заголовки и типы данных
-            db.cursor.execute("PRAGMA table_info(vehicles)")
+            db.cursor.execute(f"PRAGMA table_info({table_name})")
             columns_info = db.cursor.fetchall()
             headers = []
             column_types = {}
@@ -533,7 +598,7 @@ class TableWindow(QMainWindow):
                 column_types[i] = col_type
             
             # Получаем данные
-            rows = db.fetch_all("SELECT * FROM vehicles")
+            rows = db.fetch_all(f"SELECT * FROM {table_name}")
             if rows:
                 # Преобразуем в список списков для редактирования
                 data = [list(row) for row in rows]
@@ -613,7 +678,7 @@ class TableWindow(QMainWindow):
         menu.addAction(copy_action)
         
         delete_action = QAction("Удалить", self)
-        delete_action.triggered.connect(self.delete_selected)
+        delete_action.triggered.connect(lambda: self.delete_selected(self.table_dropdown.currentText()))
         menu.addAction(delete_action)
 
         # Добавляем пункт создания документов
@@ -1054,7 +1119,7 @@ class TableWindow(QMainWindow):
         
         QApplication.clipboard().setText("\n".join(text))
 
-    def delete_selected(self):
+    def delete_selected(self,table_name):
         indexes = self.table.selectedIndexes()
         if not indexes:
             return
@@ -1081,7 +1146,7 @@ class TableWindow(QMainWindow):
                 source_row = self.proxy_model.mapToSource(self.proxy_model.index(row, 0)).row()
                 row_id = self.model._data[source_row][0]  # ID всегда в первой колонке
                 
-                if db.execute("DELETE FROM vehicles WHERE id = ?", (row_id,)):
+                if db.execute(f"DELETE FROM {table_name} WHERE id = ?", (row_id,)):
                     self.model.removeRow(source_row)
                     success_count += 1
             

@@ -4,7 +4,7 @@ from typing import Dict, Any, List
 from dataclasses import dataclass
 from datetime import datetime
 import traceback
-from database import Database
+from database import Database, CustomDatabase
 from pdf_parser import PDFParser
 
 @dataclass
@@ -23,13 +23,14 @@ class PDFProcessThread(QThread):
     stats_updated = pyqtSignal(int, int)
 
     def __init__(self, folder_path: str, excel_path: str = None, sheet_name: str = None, 
-                 sbkts_excel_path: str = None, sbkts_sheet_name: str = None):
+                 sbkts_excel_path: str = None, sbkts_sheet_name: str = None, table_name: str = None):
         super().__init__()
         self.folder_path = folder_path
         self.excel_path = excel_path
         self.sheet_name = sheet_name
         self.sbkts_excel_path = sbkts_excel_path
         self.sbkts_sheet_name = sbkts_sheet_name
+        self.table_name = table_name
         self.is_running = True
         self.results: List[ProcessingResult] = []
 
@@ -42,7 +43,7 @@ class PDFProcessThread(QThread):
                 sbkts_excel_path=self.sbkts_excel_path,
                 sbkts_sheet_name=self.sbkts_sheet_name
             )
-            db = Database()
+            db = CustomDatabase(self.table_name)
             
             # Получаем список PDF файлов
             pdf_files = [f for f in os.listdir(self.folder_path) if f.lower().endswith('.pdf')]
@@ -70,9 +71,9 @@ class PDFProcessThread(QThread):
                     # Проверяем обязательные поля
                     if not all(data.get(field) for field in ['MARKA', 'VIN', 'GOD_VIPUSKA']):
                         raise ValueError("Отсутствуют обязательные поля (MARKA, VIN, GOD_VIPUSKA)")
-                    
+                    data['filename'] = filename
                     # Сохраняем в БД
-                    if db.insert_vehicle_data(data, filename):
+                    if db.insert_vehicle_data(data):
                         result = ProcessingResult(filename=filename, success=True, data=data)
                         self.file_processed.emit(filename, data)
                     else:

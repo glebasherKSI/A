@@ -7,8 +7,9 @@ from PyQt6.QtGui import QPainter, QColor, QPen, QFont, QPainterPath, QBrush
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, 
     QHBoxLayout, QPushButton, QLabel, QFrame, QFileDialog, QGraphicsView, QGraphicsScene, QGridLayout, QLineEdit, QMessageBox,
-    QProgressBar, QTextEdit, QSizePolicy, QSpacerItem, QScrollArea
+    QProgressBar, QTextEdit, QSizePolicy, QSpacerItem, QScrollArea, QComboBox, QCheckBox, QDialog
 )
+from get_list_table_thread import GetTablesThread
 from PyPDF2 import PdfReader
 import re
 from pdf_thread import PDFProcessThread
@@ -1171,7 +1172,16 @@ class MainWindow(QtWidgets.QMainWindow):
             if not folder_path or not os.path.exists(folder_path):
                 QMessageBox.warning(self, "Предупреждение", "Выберите существующую папку с PDF файлами")
                 return
+            # Показываем диалог выбора таблицы
+            dialog = LoadTableDialog(self)
+            if dialog.exec() != QDialog.DialogCode.Accepted:
+                return
                 
+            # Получаем выбранное имя таблицы
+            table_name = dialog.get_selected_table()
+            if not table_name:
+                QMessageBox.warning(self, "Предупреждение", "Не выбрана таблица")
+                return
             # Очищаем прогресс
             self.progress_bar.setValue(0)
             
@@ -1181,7 +1191,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 excel_path=self.excel1_path,  # Excel с погодой
                 sheet_name=None,  # Лист по умолчанию
                 sbkts_excel_path=self.excel2_path,  # Excel с СБКТС
-                sbkts_sheet_name=self.sheet2_input.text()  # Название листа из поля ввода
+                sbkts_sheet_name=self.sheet2_input.text(),  # Название листа из поля ввода
+                table_name=table_name   
             )
             
             # Подключаем сигналы
@@ -1436,6 +1447,110 @@ class DatabaseThread(QThread):
             if self.db:
                 self.db.close()
             self.finished.emit()
+            
+class LoadTableDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Выбор таблицы")
+        self.setMinimumWidth(400)
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1A1B26;
+                color: white;
+            }
+            QComboBox {
+                background-color: #2F3242;
+                color: white;
+                border: 1px solid #6E738D;
+                border-radius: 5px;
+                padding: 5px;
+            }
+            QComboBox:drop-down {
+                border: none;
+            }
+            QComboBox::down-arrow {
+                image: none;
+            }
+            QLineEdit {
+                background-color: #2F3242;
+                color: white;
+                border: 1px solid #6E738D;
+                border-radius: 5px;
+                padding: 5px;
+            }
+            QPushButton {
+                background-color: #7AA2F7;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 8px 16px;
+            }
+            QPushButton:hover {
+                background-color: #89B4FA;
+            }
+            QPushButton:disabled {
+                background-color: #565F89;
+            }
+            QCheckBox {
+                color: white;
+            }
+        """)
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(15)
+
+        # Комбобокс для выбора существующей таблицы
+        self.table_combo = QComboBox()
+        self.load_existing_tables()
+        layout.addWidget(self.table_combo)
+
+        # Чекбокс для ввода нового имени
+        self.custom_name_check = QCheckBox("Ввести новое название")
+        self.custom_name_check.toggled.connect(self.toggle_input)
+        layout.addWidget(self.custom_name_check)
+
+        # Поле для ввода нового имени
+        self.name_input = QLineEdit()
+        self.name_input.setEnabled(False)
+        self.name_input.setPlaceholderText("Введите название таблицы (только латиница)")
+        self.name_input.textChanged.connect(self.validate_input)
+        layout.addWidget(self.name_input)
+
+        # Кнопка загрузки
+        self.load_button = QPushButton("Загрузить")
+        self.load_button.clicked.connect(self.accept)
+        layout.addWidget(self.load_button)
+
+    def load_existing_tables(self):
+        self.get_tables_thread = GetTablesThread()
+        self.get_tables_thread.tables_received.connect(self.handle_tables_received)
+        self.get_tables_thread.error_occurred.connect(self.handle_tables_error)
+        self.get_tables_thread.start()
+        
+    def handle_tables_received(self, tables):
+        self.table_combo.addItems(tables)
+        
+    def handle_tables_error(self, error):
+        QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить список таблиц: {error}")
+
+    def toggle_input(self, checked):
+        self.name_input.setEnabled(checked)
+        self.table_combo.setEnabled(not checked)
+        self.validate_input()
+
+    def validate_input(self):
+        if self.custom_name_check.isChecked():
+            text = self.name_input.text()
+            # Проверяем что текст содержит только латинские буквы, цифры и подчеркивания
+            valid = bool(re.match(r'^[a-zA-Z0-9_]*$', text))
+            self.load_button.setEnabled(valid and bool(text))
+        else:
+            self.load_button.setEnabled(True)
+
+    def get_selected_table(self):
+        if self.custom_name_check.isChecked():
+            return self.name_input.text()
+        return self.table_combo.currentText()
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

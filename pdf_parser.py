@@ -398,7 +398,7 @@ class PDFParser:
             print(f"\n[DEBUG PDF] Пропускаем поиск данных СБКТС:")
             print(f"[DEBUG PDF] DataFrame СБКТС установлен: {self._sbkts_df is not None}")
             print(f"[DEBUG PDF] VIN найден: {bool(result_data.get('VIN'))}")
-                    
+        print(result_data)          
         return result_data
 
     def get_vehicle_data(self):
