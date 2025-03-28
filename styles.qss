@@ -1,0 +1,259 @@
+* {
+    font-family: "Segoe UI";
+    color: white;
+}
+
+QMainWindow {
+    background-color: #1A1B26;
+}
+
+QPushButton {
+    background-color: transparent;
+    color: white;
+    border: none;
+}
+
+QPushButton#toggleConsoleButton {
+    background-color: #DE3163;
+}
+
+QWidget#sideMenu {
+    background-color: #24273A;
+    border: none;
+}
+
+QLabel {
+    color: white;
+}
+
+QTextEdit {
+    background-color: #1A1B26;
+    color: white;
+    border: 1px solid #2F3242;
+}
+
+#homeButton {
+    background: transparent;
+    color: white;
+}
+
+#settingsButton {
+    background: transparent;
+    color: white;
+}
+
+#consoleWidget {
+    background-color: #24273A;
+    border-top: 1px solid #2F3242;
+}
+
+#console {
+    background-color: #1A1B26;
+    color: white;
+    border: 1px solid #2F3242;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: Consolas;
+    font-size: 13px;
+}
+
+#mainContent {
+    background-color: #1A1B26;
+}
+
+/* Основные цвета */
+:root {
+    --main-bg-color: #1A1B26;
+    --secondary-bg-color: #24273A;
+    --accent-color: #DE3163;
+    --accent-hover: #E84374;
+    --text-color: #FFFFFF;
+    --text-secondary: #8E8EA0;
+    --card-bg: #1E1F2B;
+    --border-radius: 12px;
+}
+
+/* Разделительная линия */
+Line {
+    background-color: #2F3242;
+}
+
+/* Кнопки бокового меню */
+#menuButton:pressed, #homeButton:pressed, #settingsButton:pressed {
+    background-color: #DE3163;
+}
+
+/* Полосы прокрутки */
+QScrollBar:vertical {
+    border: none;
+    background: transparent;
+    width: 8px;
+}
+
+QScrollBar::handle:vertical {
+    background: #DE3163;
+    border-radius: 4px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+/* Вкладки содержимого */
+QStackedWidget {
+    background: transparent;
+}
+
+#homePage, #settingsPage {
+    background-color: #1A1B26;
+    border-radius: 12px;
+}
+
+/* Общие стили */
+QWidget {
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+/* Карточки */
+QWidget[class="card"] {
+    background-color: #1E1F2B;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+#titleBar {
+    background-color: #24273A;
+    border-bottom: 1px solid #2F3242;
+}
+
+#minimizeButton, #maximizeButton, #closeButton {
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 4px;
+    border-radius: 4px;
+    font-family: "Segoe UI";
+    font-size: 16px;
+}
+
+#minimizeButton:hover, #maximizeButton:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#closeButton:hover {
+    background-color: #DE3163;
+}
+
+#menuButton, #homeButton, #settingsButton {
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 8px;
+    text-align: left;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+#menuButton:hover, #homeButton:hover, #settingsButton:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+#selectFile1Button, #selectFile2Button {
+    background-color: #DE3163;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+#selectFile1Button:hover, #selectFile2Button:hover {
+    background-color: #FF4778;
+}
+
+#file1PathLabel, #file2PathLabel {
+    color: #FFFFFF;
+    font-size: 14px;
+    padding-left: 24px;
+    opacity: 0.8;
+}
+
+#statsWidget {
+    background-color: transparent;
+    padding: 0;
+    margin: 40px 0;
+}
+
+#statsLabel {
+    color: #FFFFFF;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+#statsPercentLabel {
+    color: #FFFFFF;
+    font-size: 16px;
+    opacity: 0.8;
+    margin-bottom: 16px;
+}
+
+#successLabel {
+    color: #7B5AF4;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+#failLabel {
+    color: #DE3163;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+#questionLabel {
+    color: #FFA500;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+#startButton {
+    background-color: #7B5AF4;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 16px;
+}
+
+#startButton:hover {
+    background-color: #8D6FF5;
+}
+
+#toggleConsoleButton {
+    background-color: #DE3163;
+    color: white;
+    border: none;
+    border-radius: 16px;
+    padding: 8px;
+    min-width: 120px;
+}
+
+#toggleConsoleButton:hover {
+    background-color: #E84374;
+}
+
+#startButton, #stopButton {
+    background-color: #24273A;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+#startButton:pressed, #stopButton:pressed {
+    background-color: #DE3163;
+} 
