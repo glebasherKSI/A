@@ -778,8 +778,10 @@ class TableWindow(QMainWindow):
         
         # Получаем уникальные значения для колонки
         unique_values = set()
-        for row in range(self.model.rowCount(None)):
-            value = str(self.model.data(self.model.index(row, column), Qt.ItemDataRole.DisplayRole))
+        from PyQt6.QtCore import QModelIndex
+        for row in range(self.proxy_model.rowCount(QModelIndex())):
+            source_index = self.proxy_model.mapToSource(self.proxy_model.index(row, column))
+            value = str(self.model.data(source_index, Qt.ItemDataRole.DisplayRole))
             unique_values.add(value)
         
         # Создаем чекбоксы
@@ -844,6 +846,14 @@ class TableWindow(QMainWindow):
         for column, values in self.current_filters.items():
             self.proxy_model.set_filter(column, values)
             self.model.set_column_filtered(column, bool(values))
+        
+        # Если в колонке нет выбранных значений, очищаем фильтр для этой колонки
+        for column in range(self.model.columnCount(None)):
+            if column not in self.current_filters:
+                self.proxy_model.set_filter(column, None)
+                self.model.set_column_filtered(column, False)
+        
+        self.proxy_model.invalidateFilter()
 
     def clear_filter(self, column):
         if column in self.current_filters:
